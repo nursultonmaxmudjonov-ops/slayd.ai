@@ -1,35 +1,43 @@
 import { Slide, GenerateOptions, Language } from '../types';
 import { getFallbackPresentation } from './templates';
-import { getCleanImageUrl } from './imageService';
+import { getCleanImageUrl, getAIImageUrl } from './imageService';
 
 export async function generateSlidesWithAI(options: GenerateOptions): Promise<Slide[]> {
   const { topic, language, slideCount, audience, apiKey } = options;
 
-  const langPrompt = language === 'uz' 
-    ? "O'zbek tilida (lotin alifbosida)" 
-    : language === 'ru' 
-    ? "на русском языке" 
+  const langPrompt = language === 'uz'
+    ? "O'zbek tilida (lotin alifbosida)"
+    : language === 'ru'
+    ? "на русском языке"
     : "in English";
 
-  const systemPrompt = `You are an elite presentation designer.
-Generate a professional, visually compelling ${slideCount}-slide presentation on the topic: "${topic}".
+  const systemPrompt = `You are an expert researcher and elite presentation designer.
+Generate a professional, information-rich ${slideCount}-slide presentation on the topic: "${topic}".
 Language requirement: Generate all slide text completely ${langPrompt}.
 Target audience: ${audience}.
+
+CRITICAL CONTENT RULES:
+1. EVERY bullet, stat, timeline step and quote MUST contain SPECIFIC, FACTUAL information about "${topic}" — real numbers, named concepts, concrete examples, dates, or techniques from that field.
+2. NEVER write generic filler phrases like "zamonaviy tendensiyalar", "katta imkoniyatlar", "muhim omillar", "asosiy jihatlar", "the future is bright", "many opportunities". If a sentence could apply to ANY topic, rewrite it with topic-specific detail.
+3. Each slide covers a DIFFERENT aspect of the topic (definition, history, how it works, benefits, challenges, real examples, data, future) — build a logical narrative plan like an expert would.
+4. Stats slide must contain plausible topic-specific figures (mark trends with approximations like "~", never invent exact fake citations).
+5. No two slides may repeat the same idea or sentence.
 
 Respond with a VALID JSON ARRAY of slide objects ONLY. Do not wrap in markdown quotes if possible, or wrap in \`\`\`json ... \`\`\`.
 Each slide must have:
 - "id": string (e.g. "slide-1", "slide-2", etc.)
 - "layout": one of ["title", "bullets", "stats", "compare", "timeline", "quote", "conclusion"]
+- "imagePrompt": a SHORT visual English description (5-10 words) of a relevant illustration/photo for this slide (e.g. "modern robot hand touching digital screen"). No text in the image.
 - "title": concise, impactful headline (3-8 words)
 - "subtitle": optional supporting line or subtitle
 - "badge": short tag/category (e.g. "01", "Fakt", "Tahlil", "Xulosa")
-- "speakerNotes": 1-2 helpful sentences for the presenter to say
+- "speakerNotes": 1-2 helpful sentences for the presenter to say, WITH topic-specific facts
 - Layout-specific fields:
   * For "title": title and subtitle
-  * For "bullets": "points": array of 3-4 clear, substantive bullet points (each 8-15 words)
-  * For "stats": "stats": array of 3 objects with { "value": "e.g. +75%", "label": "description", "trend": "context" }
+  * For "bullets": "points": array of 3-4 clear, substantive, fact-rich bullet points (each 10-18 words) about "${topic}"
+  * For "stats": "stats": array of 3 objects with { "value": "e.g. +75%", "label": "specific metric for this topic", "trend": "context" }
   * For "compare": "compare": { "leftTitle": "...", "leftItems": ["..."], "rightTitle": "...", "rightItems": ["..."] }
-  * For "timeline": "timeline": array of 3-4 steps with { "step": "01", "title": "...", "description": "..." }
+  * For "timeline": "timeline": array of 3-4 steps with { "step": "01", "title": "...", "description": "..." } — real milestones of the topic's development
   * For "quote": "quote": { "text": "...", "author": "...", "role": "..." }
   * For "conclusion": "conclusion": { "mainMessage": "...", "takeaways": ["point 1", "point 2", "point 3"], "callToAction": "...", "contact": "..." }
 
@@ -124,6 +132,10 @@ function parseSlideJson(rawText: string, topic: string): Slide[] | null {
     const parsed = JSON.parse(clean);
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed.map((item, index) => {
+        // Use AI-generated image when available, fallback to curated photo
+        const imagePrompt = item.imagePrompt
+          ? `${item.imagePrompt}, ${topic}, professional, high quality, detailed`
+          : '';
         return {
           ...item,
           id: item.id || `slide-${index + 1}`,
@@ -131,7 +143,10 @@ function parseSlideJson(rawText: string, topic: string): Slide[] | null {
           title: item.title || `Slide ${index + 1}`,
           selected: true,
           showImage: true,
-          imageUrl: getCleanImageUrl(topic, item.title || '', index)
+          visualMode: 'ai_graphic' as const,
+          imageUrl: imagePrompt
+            ? getAIImageUrl(imagePrompt, index + 1, index === 0)
+            : getCleanImageUrl(topic, item.title || '', index)
         };
       });
     }

@@ -160,10 +160,11 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           {/* Present Mode */}
           <button
             onClick={onStartPresentation}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
+            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>{t.presentMode}</span>
+            <span className="hidden sm:inline">{t.presentMode}</span>
+            <span className="sm:hidden">Ko'rish</span>
           </button>
 
           {/* Export PPTX */}
@@ -180,7 +181,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
             ) : (
               <>
                 <Download className="w-3.5 h-3.5" />
-                <span>PPTX Yuklab Olish ({selectedCount})</span>
+                <span className="truncate">PPTX ({selectedCount})</span>
               </>
             )}
           </button>

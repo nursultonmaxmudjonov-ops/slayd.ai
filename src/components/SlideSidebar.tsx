@@ -35,7 +35,7 @@ export const SlideSidebar: React.FC<SlideSidebarProps> = ({
   const allSelected = selectedCount === slides.length;
 
   return (
-    <aside className="w-full lg:w-72 border-r border-slate-800/80 bg-slate-950/60 p-4 flex flex-col gap-3 shrink-0">
+    <aside className="w-full lg:w-72 bg-slate-950/60 p-3 sm:p-4 flex flex-col gap-3 shrink-0">
       {/* Top Header & Page Selector */}
       <div className="space-y-2 pb-2 border-b border-slate-800/80">
         <div className="flex items-center justify-between">
@@ -48,7 +48,7 @@ export const SlideSidebar: React.FC<SlideSidebarProps> = ({
             title={t.addSlide}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Qo'shish</span>
+            <span className="hidden sm:inline">Qo'shish</span>
           </button>
         </div>
 
@@ -72,7 +72,7 @@ export const SlideSidebar: React.FC<SlideSidebarProps> = ({
       </div>
 
       {/* Slide Thumbnails List */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[calc(100vh-250px)]">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 lg:max-h-[calc(100vh-250px)] max-h-none">
         {slides.map((s, idx) => {
           const isActive = idx === activeIndex;
           const isSelected = s.selected !== false;

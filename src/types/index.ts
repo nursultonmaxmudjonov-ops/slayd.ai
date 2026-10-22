@@ -11,7 +11,7 @@ export type SlideLayout =
   | 'quote'       // Iqtibos yoki asosiy shior
   | 'conclusion'; // Xulosa va keyingi qadamlar
 
-export type VisualMode = 'ai_graphic' | 'photo';
+export type VisualMode = 'ai_graphic' | 'photo' | 'ai_image';
 
 export interface SlideStat {
   value: string;

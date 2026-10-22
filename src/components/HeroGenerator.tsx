@@ -14,6 +14,7 @@ import {
 import { Language, AudienceType, ThemeId, GenerateOptions } from '../types';
 import { TRANSLATIONS } from '../locales/translations';
 import { SLIDE_THEMES } from '../themes/slideThemes';
+import { suggestTheme } from '../services/imageService';
 
 interface HeroGeneratorProps {
   language: Language;
@@ -35,12 +36,21 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
   const [customSlideCount, setCustomSlideCount] = useState<string>('8');
   const [audience, setAudience] = useState<AudienceType>('business');
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>('minimalist');
+  const [autoTheme, setAutoTheme] = useState<boolean>(true); // AI auto-chooses theme based on topic
+
+  // When topic changes & auto mode on, suggest a matching theme
+  const handleTopicChange = (val: string) => {
+    setTopic(val);
+    if (autoTheme && val.trim().length > 3) {
+      setSelectedTheme(suggestTheme(val));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
 
-    const count = isCustomCount ? Math.max(2, Math.min(25, parseInt(customSlideCount) || 8)) : slideCount;
+    const count = isCustomCount ? Math.max(2, Math.min(40, parseInt(customSlideCount) || 8)) : slideCount;
 
     onGenerate({
       topic: topic.trim(),
@@ -100,7 +110,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
             <div className="relative">
               <textarea
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => handleTopicChange(e.target.value)}
                 placeholder={t.topicPlaceholder}
                 rows={3}
                 required
@@ -149,7 +159,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
 
               {!isCustomCount ? (
                 <div className="grid grid-cols-4 gap-1.5">
-                  {[5, 8, 10, 12].map((num) => (
+                  {[5, 10, 15, 20].map((num) => (
                     <button
                       type="button"
                       key={num}
@@ -169,7 +179,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                   <input
                     type="number"
                     min={2}
-                    max={25}
+                    max={40}
                     value={customSlideCount}
                     onChange={(e) => setCustomSlideCount(e.target.value)}
                     className="w-full px-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white text-center focus:outline-none focus:border-brand-500"
@@ -233,6 +243,20 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
               <Palette className="w-3.5 h-3.5 text-brand-400" />
               {t.themeLabel}
             </label>
+            <div className="flex items-center justify-between mb-2">
+              <button
+                type="button"
+                onClick={() => setAutoTheme(!autoTheme)}
+                className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                  autoTheme
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                {autoTheme ? 'AI avtomatik tanlaydi ✓' : "O'zi tanlash"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
               {Object.values(SLIDE_THEMES).map((thm) => {
                 const isSelected = selectedTheme === thm.id;
@@ -242,7 +266,10 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                   <button
                     type="button"
                     key={thm.id}
-                    onClick={() => setSelectedTheme(thm.id)}
+                    onClick={() => {
+                      setSelectedTheme(thm.id);
+                      setAutoTheme(false);
+                    }}
                     className={`relative p-2 rounded-xl border text-left transition-all group overflow-hidden ${
                       isSelected
                         ? 'border-brand-500 bg-slate-800/90 ring-2 ring-brand-500/30'

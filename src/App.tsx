@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { 
-  Language, 
-  Presentation, 
-  GenerateOptions, 
-  Slide, 
-  ThemeId 
+import {
+  Language,
+  Presentation,
+  GenerateOptions,
+  Slide,
+  ThemeId
 } from './types';
 import { SLIDE_THEMES } from './themes/slideThemes';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { AuthModal } from './components/AuthModal';
+import { SpinModal } from './components/SpinModal';
 import { HeroGenerator } from './components/HeroGenerator';
 import { SlideCanvas } from './components/SlideCanvas';
 import { SlideSidebar } from './components/SlideSidebar';
@@ -17,6 +20,19 @@ import { PresentationModal } from './components/PresentationModal';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { generateSlidesWithAI } from './services/aiService';
 import { exportToPowerPoint } from './services/pptxService';
+import {
+  CreditUser,
+  loadUser,
+  login as creditLogin,
+  logout as creditLogout,
+  spendCredits,
+  hasEnoughCredits,
+  creditsNeeded,
+  CREDITS_PER_SLIDE,
+  SIGNUP_BONUS,
+  DAILY_BONUS
+} from './services/creditsService';
+import { canSpin, autoClaimDaily, msUntilNextDaily } from './services/creditsService';
 
 export const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => {
@@ -33,6 +49,62 @@ export const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isPresenting, setIsPresenting] = useState(false);
+  const [user, setUser] = useState<CreditUser | null>(() => loadUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => !loadUser());
+  const [isSpinModalOpen, setIsSpinModalOpen] = useState(false);
+  const [toast, setToast] = useState<string>('');
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 4000);
+  };
+
+  // Login handler: grants signup bonus (300) for new users and daily bonus (100) for returning
+  const handleLogin = (name: string, email: string, phone: string) => {
+    const { user: u, signupBonus, dailyBonus } = creditLogin(name, email, phone);
+    setUser(u);
+    setIsAuthModalOpen(false);
+    if (signupBonus) {
+      showToast(`🎉 ${SIGNUP_BONUS} kredit sovg'a + ${DAILY_BONUS} kunlik bonus! Jami: ${u.credits} kredit`);
+    } else if (dailyBonus) {
+      showToast(`☀️ Kunlik bonus: +${DAILY_BONUS} kredit! Jami: ${u.credits} kredit`);
+    }
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
+  };
+
+  const handleLogout = () => {
+    creditLogout();
+    setUser(null);
+    setIsAuthModalOpen(true);
+  };
+
+  // Daily bonus: auto-claim on app load, tab focus, and every minute (new day = new +100 bonus)
+  useEffect(() => {
+    if (!user) return;
+    const check = () => {
+      const res = autoClaimDaily();
+      if (res?.granted) {
+        setUser(res.user);
+        showToast(`☀️ Yangi kun — kunlik bonus +${DAILY_BONUS} kredit! Jami: ${res.user.credits}`);
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+      }
+    };
+    check();
+    const interval = setInterval(check, 60000);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', check);
+    };
+  }, [user?.credits]);
+
+  // Weekly spin win handler
+  const handleSpinWin = (u: CreditUser, won: number) => {
+    setUser(u);
+    showToast(won >= 1000
+      ? `🏆 JACKPOT! +${won} kredit! Jami: ${u.credits}`
+      : `🎁 Spin natijasi: +${won} kredit! Jami: ${u.credits}`);
+  };
 
   // Persist language
   const handleLanguageChange = (lang: Language) => {
@@ -46,14 +118,31 @@ export const App: React.FC = () => {
     localStorage.setItem('slaydai_gemini_key', key);
   };
 
-  // Generate slides handler
+  // Generate slides handler (credit-gated)
   const handleGenerate = async (options: GenerateOptions) => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (!hasEnoughCredits(user.credits, options.slideCount)) {
+      const need = creditsNeeded(user.credits, options.slideCount);
+      showToast(`⚠️ Kredit yetmadi. Yana ${need} kredit kerak. Ertaga kirib +${DAILY_BONUS} kredit oling!`);
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const slides = await generateSlidesWithAI({
         ...options,
         apiKey: apiKey || undefined
       });
+
+      // Deduct credits only after successful generation
+      const updated = spendCredits(user.credits, slides.length);
+      if (updated) {
+        setUser(updated);
+        showToast(`✅ ${slides.length} slayd yaratildi — ${slides.length * CREDITS_PER_SLIDE} kredit yechildi. Qoldi: ${updated.credits}`);
+      }
 
       const newPres: Presentation = {
         id: `pres-${Date.now()}`,
@@ -196,6 +285,10 @@ export const App: React.FC = () => {
         onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
         hasApiKey={Boolean(apiKey)}
         onNewPresentation={() => setPresentation(null)}
+        user={user}
+        onLoginClick={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        onSpinClick={() => setIsSpinModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -211,20 +304,22 @@ export const App: React.FC = () => {
         ) : (
           // Visual Slide Editor Screen
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-            {/* Left Slides Sidebar */}
-            <SlideSidebar
-              slides={presentation.slides}
-              activeIndex={activeSlideIndex}
-              onSelectSlide={setActiveSlideIndex}
-              onToggleSlideSelection={handleToggleSlideSelection}
-              onSelectAllSlides={handleSelectAllSlides}
-              onAddSlide={handleAddSlide}
-              onDeleteSlide={handleDeleteSlide}
-              onDuplicateSlide={handleDuplicateSlide}
-              onMoveSlide={handleMoveSlide}
-              theme={activeTheme}
-              language={language}
-            />
+            {/* Left Slides Sidebar (stacks above canvas on mobile) */}
+            <div className="lg:max-h-none max-h-[38vh] overflow-y-auto lg:overflow-visible border-b lg:border-b-0 lg:border-r border-slate-800/60 lg:border-slate-800/80">
+              <SlideSidebar
+                slides={presentation.slides}
+                activeIndex={activeSlideIndex}
+                onSelectSlide={setActiveSlideIndex}
+                onToggleSlideSelection={handleToggleSlideSelection}
+                onSelectAllSlides={handleSelectAllSlides}
+                onAddSlide={handleAddSlide}
+                onDeleteSlide={handleDeleteSlide}
+                onDuplicateSlide={handleDuplicateSlide}
+                onMoveSlide={handleMoveSlide}
+                theme={activeTheme}
+                language={language}
+              />
+            </div>
 
             {/* Central 16:9 Presentation Canvas */}
             <SlideCanvas
@@ -267,6 +362,37 @@ export const App: React.FC = () => {
           language={language}
           initialIndex={activeSlideIndex}
         />
+      )}
+
+      {/* Made with Slayd.AI Footer */}
+      <Footer language={language} />
+
+      {/* Weekly Spin Wheel */}
+      {user && (
+        <SpinModal
+          isOpen={isSpinModalOpen}
+          onClose={() => setIsSpinModalOpen(false)}
+          user={user}
+          onWin={handleSpinWin}
+          language={language}
+        />
+      )}
+
+      {/* Auth / Login Modal (credit system) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          if (user) setIsAuthModalOpen(false);
+        }}
+        onLogin={handleLogin}
+        language={language}
+      />
+
+      {/* Toast notifications */}
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[70] max-w-[92vw] sm:max-w-md px-4 py-2.5 rounded-2xl bg-slate-900 border border-brand-500/40 shadow-2xl shadow-brand-900/40 text-xs sm:text-sm text-slate-100 text-center backdrop-blur-xl animate-[fadeIn_0.2s_ease-out]">
+          {toast}
+        </div>
       )}
 
       {/* API Key Modal */}

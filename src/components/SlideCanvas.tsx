@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { TRANSLATIONS } from '../locales/translations';
 import { MinimalistAIVisual } from './MinimalistAIVisual';
+import { getAIImageUrl } from '../services/imageService';
 
 interface SlideCanvasProps {
   slide: Slide;
@@ -51,20 +52,30 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
   // Toggle visual on/off
   const toggleVisual = () => {
     const willShow = slide.showImage === false ? true : false;
-    onUpdateSlide({ 
-      ...slide, 
+    onUpdateSlide({
+      ...slide,
       showImage: willShow,
       visualMode: slide.visualMode || 'ai_graphic'
     });
   };
 
-  // Switch visual mode: Minimalist AI Graphic vs HD Photo
+  // Switch visual mode: Minimalist AI Graphic vs HD Photo vs AI Generated Image
   const switchVisualMode = (mode: VisualMode) => {
-    onUpdateSlide({
-      ...slide,
+    const updates: Partial<Slide> = {
       visualMode: mode,
       showImage: true
-    });
+    };
+
+    // If AI image requested but slide has no generated image yet, create one on the fly
+    if (mode === 'ai_image' && !(slide.imageUrl || '').includes('pollinations.ai')) {
+      updates.imageUrl = getAIImageUrl(
+        `${slide.title} ${slide.subtitle || ''}, professional presentation illustration, high quality, detailed, no text`,
+        slideIndex + 1,
+        slide.layout === 'title'
+      );
+    }
+
+    onUpdateSlide({ ...slide, ...updates });
   };
 
   const handleLayoutChange = (newLayout: SlideLayout) => {
@@ -190,6 +201,17 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
             >
               <Sparkle className="w-3 h-3 text-yellow-300" />
               <span>Minimalist AI</span>
+            </button>
+            <button
+              onClick={() => switchVisualMode('ai_image')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                hasImage && currentVisualMode === 'ai_image'
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-fuchsia-300" />
+              <span>AI Rasm</span>
             </button>
             <button
               onClick={() => switchVisualMode('photo')}
@@ -325,6 +347,10 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
                       src={slide.imageUrl}
                       alt={slide.title}
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.opacity = '0.3';
+                      }}
                     />
                   )}
                 </div>
@@ -390,6 +416,10 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
                       src={slide.imageUrl}
                       alt={slide.title}
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.opacity = '0.3';
+                      }}
                     />
                   )}
                 </div>

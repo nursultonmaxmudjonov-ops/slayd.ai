@@ -25,7 +25,18 @@ export async function exportToPowerPoint(
 
   const { bg, cardBg, cardBorder, primary, accent, text, textMuted } = theme.pptx;
   const borderCol = cardBorder || (theme.id === 'minimalist' ? 'E2E8F0' : '1E293B');
-  const fontMain = 'Segoe UI';
+  // Distinct font pairing per theme so exports don't all look identical
+  const THEME_FONTS: Record<string, { main: string; display: string }> = {
+    minimalist: { main: 'Calibri', display: 'Georgia' },
+    midnight: { main: 'Segoe UI', display: 'Segoe UI' },
+    indigo: { main: 'Verdana', display: 'Trebuchet MS' },
+    emerald: { main: 'Candara', display: 'Cambria' },
+    crimson: { main: 'Tahoma', display: 'Trebuchet MS' },
+    cyberpunk: { main: 'Consolas', display: 'Bahnschrift' }
+  };
+  const fonts = THEME_FONTS[theme.id] || THEME_FONTS.midnight;
+  const fontMain = fonts.main;
+  const fontDisplay = fonts.display;
 
   for (let index = 0; index < slidesToProcess.length; index++) {
     const s = slidesToProcess[index];
@@ -72,7 +83,7 @@ export async function exportToPowerPoint(
         fontSize: 24,
         bold: true,
         color: text,
-        fontFace: fontMain
+        fontFace: fontDisplay
       });
 
       // Slide Subtitle
@@ -134,7 +145,7 @@ export async function exportToPowerPoint(
           fontSize: 38,
           bold: true,
           color: text,
-          fontFace: fontMain
+          fontFace: fontDisplay
         });
 
         // Subtitle
@@ -180,7 +191,7 @@ export async function exportToPowerPoint(
           const imgH = 4.3;
 
           let imageEmbedded = false;
-          if (s.visualMode === 'photo' && s.imageUrl) {
+          if (s.imageUrl && (s.visualMode === 'photo' || s.visualMode === 'ai_image')) {
             try {
               slide.addImage({
                 path: s.imageUrl,
@@ -305,7 +316,7 @@ export async function exportToPowerPoint(
           const vH = Math.max(3.2, Math.min(4.4, (points.length * (cardH + 0.18)) - 0.18));
 
           let imageEmbedded = false;
-          if (s.visualMode === 'photo' && s.imageUrl) {
+          if (s.imageUrl && (s.visualMode === 'photo' || s.visualMode === 'ai_image')) {
             try {
               slide.addImage({
                 path: s.imageUrl,

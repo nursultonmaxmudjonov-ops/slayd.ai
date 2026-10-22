@@ -196,34 +196,143 @@ export function getFallbackPresentation(
     });
   }
 
-  // Slide 7 (if count >= 7): Extra bullets
-  if (count >= 7) {
+  // Slides 7..N-1: Extra topic-specific content slides so ANY requested count is filled.
+  // Each slide covers a DIFFENT, concrete aspect of the topic — no generic filler.
+  const extraTopics = lang === 'uz' ? [
+    { title: `"${topic}" ning Asosiy Tushunchalari`, subtitle: 'Mavzuning tayanch atamalari va mohiyati', points: [
+      `"${topic}" ning aniq ta'rifi va uning bugungi hayotdagi o'rni`,
+      'Ushbu sohadagi asosiy atamalarning qisqa va tushunarli izohi',
+      'Mavzu qanday sohalar bilan bog\'liqligi va integratsiya yo\'nalishlari',
+      'Yangi boshlovchi uchun eng muhim 3 ta asosiy tushuncha'
+    ]},
+    { title: `"${topic}" Tarixiy Rivojlanish Bosqichlari`, subtitle: 'Mavzu qanday shakllanib kelgani', points: [
+      `"${topic}" ning paydo bo\'lish sharoitlari va dastlabki g\'oyalari`,
+      'Sohadagi burilish yasagan kashfiyotlar va texnologiyalar',
+      'So\'nggi 10 yildagi eng tez o\'zgarishlar va ularning sabablari',
+      'Bugungi holat: qayerda to\'xtaganmiz va nima uchun'
+    ]},
+    { title: `"${topic}" ning Amaliy Foydasi`, subtitle: 'Kundalik hayot va kasbiy faoliyatga tatbiqi', points: [
+      `"${topic}" qanday muammoni hal qiladi va kimlarga foyda keltiradi`,
+      'Haqiqiy hayotdan olingan muvaffaqiyatli tatbiq misollari',
+      'Vaqt, mablag\' va resurs tejashdagi aniq o\'rinlar',
+      'Kichik biznes va yirik tashkilotlar uchun farqli yondashuvlar'
+    ]},
+    { title: `"${topic}" Yo\'lidagi Asosiy To\'siqlar`, subtitle: 'Muammolar ularni yengish yo\'llari bilan', points: [
+      'Sohadagi eng ko\'p uchraydigan xatolar va ularning ildizi',
+      'Texnik va moliyaviy cheklovlarni bosqichma-bosqich yengish',
+      'Bilim va malakaning yetishmasligini bartaraf qilish yo\'llari',
+      'Xavflarni oldindan bashorat qilish va boshqarish mexanizmlari'
+    ]},
+    { title: `"${topic}" bo\'yicha Mutaxassislarning Maslahatlari`, subtitle: 'Amaliyotdan chiqqan tavsiyalar', points: [
+      'Soha yetakchilarining eng ko\'p takrorlaydigan 3 ta maslahati',
+      'Yangi boshlovchilar eng ko\'p xato qiladigan joy va uning yechimi',
+      'Natijani 2 barobar tezlashtiruvchi oddiy usullar',
+      'Doimiy rivojlanish uchun kunlik odatlar tizimi'
+    ]},
+    { title: `"${topic}" Kelgusi 5 Yil Istiqbollari`, subtitle: 'Tendensiyalar va bashoratlar', points: [
+      'Sohani tubdan o\'zgartirishi kutilayotgan texnologiyalar',
+      'Bozorning o\'sish prognozlari va yangi is\' o\'rinlari',
+      'Bugun tayyorlanish kerak bo\'lgan kelajak ko\'nikmalari',
+      'Investitsiya va tadbirkorlik uchun eng istiqbolli yo\'nalishlar'
+    ]}
+  ] : lang === 'ru' ? [
+    { title: `Основные понятия: ${topic}`, subtitle: 'Ключевые термины и суть темы', points: [
+      `Точное определение "${topic}" и его роль сегодня`,
+      'Краткие и понятные объяснения базовых терминов',
+      'Связи темы с другими областями и направлениями',
+      'Три главные концепции для начинающих'
+    ]},
+    { title: `История развития: ${topic}`, subtitle: 'Как формировалась эта область', points: [
+      'Условия появления и первые идеи в этой сфере',
+      'Прорывные открытия и технологии отрасли',
+      'Крупнейшие изменения за последние 10 лет',
+      'Текущее состояние: где мы сейчас и почему'
+    ]},
+    { title: `Практическая польза: ${topic}`, subtitle: 'Применение в жизни и работе', points: [
+      'Какие проблемы решает и кому приносит пользу',
+      'Реальные примеры успешного внедрения',
+      'Конкретная экономия времени, денег и ресурсов',
+      'Разные подходы для малого и крупного бизнеса'
+    ]},
+    { title: `Основные препятствия в теме «${topic}»`, subtitle: 'Проблемы и пути их преодоления', points: [
+      'Самые частые ошибки и их корни',
+      'Пошаговое преодоление технических и финансовых ограничений',
+      'Как восполнить нехватку знаний и навыков',
+      'Механизмы прогнозирования и управления рисками'
+    ]},
+    { title: `Советы экспертов по теме «${topic}»`, subtitle: 'Рекомендации из практики', points: [
+      'Три совета, которые чаще всего повторяют лидеры отрасли',
+      'Где новички ошибаются чаще всего — и как этого избежать',
+      'Простые приёмы, удвоящие скорость результата',
+      'Система ежедневных привычек для постоянного роста'
+    ]},
+    { title: `Перспективы на 5 лет: ${topic}`, subtitle: 'Тренды и прогнозы', points: [
+      'Технологии, которые изменят отрасль радикально',
+      'Прогнозы роста рынка и новые рабочие места',
+      'Навыки будущего, к которым стоит готовиться уже сейчас',
+      'Самые перспективные направления для инвестиций'
+    ]}
+  ] : [
+    { title: `Core Concepts of ${topic}`, subtitle: 'Key terms and the essence of the subject', points: [
+      `A precise definition of ${topic} and its role today`,
+      'Short, clear explanations of the foundational terms',
+      'How this topic connects to related fields and disciplines',
+      'The three most essential concepts for beginners'
+    ]},
+    { title: `How ${topic} Evolved`, subtitle: 'The historical development of the field', points: [
+      'The conditions and early ideas that started it all',
+      'Breakthrough discoveries and technologies in this field',
+      'The biggest changes of the last decade and why they happened',
+      'Where the field stands today — and what shaped it'
+    ]},
+    { title: `Practical Benefits of ${topic}`, subtitle: 'Real applications in work and daily life', points: [
+      'Which problems it solves and who benefits the most',
+      'Real-world examples of successful implementation',
+      'Concrete savings in time, money and resources',
+      'Different approaches for small business vs enterprise'
+    ]},
+    { title: `Key Challenges in ${topic}`, subtitle: 'Obstacles and proven ways around them', points: [
+      'The most common mistakes in the field and their root causes',
+      'Step-by-step ways past technical and financial limits',
+      'Closing the knowledge and skill gap effectively',
+      'Mechanisms for predicting and managing risks early'
+    ]},
+    { title: `Expert Advice on ${topic}`, subtitle: 'Recommendations born from practice', points: [
+      'The three tips industry leaders repeat the most',
+      'Where beginners fail most — and the fix for each case',
+      'Simple techniques that double your results',
+      'A daily habit system for continuous improvement'
+    ]},
+    { title: `The Next 5 Years of ${topic}`, subtitle: 'Trends and forecasts', points: [
+      'Technologies expected to transform the field',
+      'Market growth projections and emerging jobs',
+      'Future skills worth building right now',
+      'The most promising directions for investment'
+    ]}
+  ];
+
+  let slideNum = 7;
+  let extraIdx = 0;
+  while (slides.length < count - 1) {
+    const t = extraTopics[extraIdx % extraTopics.length];
     slides.push({
-      id: 'slide-7',
+      id: `slide-${slideNum}`,
       layout: 'bullets',
-      title: lang === 'uz' ? 'Kutilayotgan Natijalar' : lang === 'ru' ? 'Ожидаемые Результаты' : 'Key Expected Outcomes',
-      subtitle: lang === 'uz' ? 'Strategik maqsadlarga erishish mezonlari' : lang === 'ru' ? 'Критерии достижения успеха' : 'Strategic milestones and value created',
-      badge: '06',
-      imageUrl: getCleanImageUrl(topic, 'results', 6),
+      title: t.title,
+      subtitle: t.subtitle,
+      badge: String(slides.length).padStart(2, '0'),
+      imageUrl: getCleanImageUrl(topic, t.title, slides.length),
       showImage: true,
       selected: true,
-      points: lang === 'uz' ? [
-        'Resurslarni 40% gacha tejash va xarajatlarni optimallashtirish',
-        'Jamoa va tizim o\'rtasidagi hamkorlik sifatini oshirish',
-        'Uzoq muddatli barqarorlik va raqobatbardoshlikni ta\'minlash',
-        'Yangi bozorlar va imkoniyatlar eshigini ochish'
-      ] : lang === 'ru' ? [
-        'Экономия ресурсов до 40% и оптимизация операционных затрат',
-        'Повышение качества взаимодействия между участниками процесса',
-        'Обеспечение долгосрочной устойчивости и конкурентоспособности',
-        'Выход на новые рынки и освоение новых возможностей'
-      ] : [
-        'Up to 40% resource conservation and budget optimization',
-        'Elevated collaboration and synergy across stakeholders',
-        'Sustainable long-term competitive advantage',
-        'Unlocking new market horizons and scalable avenues'
-      ]
+      points: t.points,
+      speakerNotes: lang === 'uz'
+        ? 'Ushbu slayd asosiy fikrlarni mustahkamlaydi.'
+        : lang === 'ru'
+        ? 'Этот слайд закрепляет ключевые идеи.'
+        : 'This slide reinforces the key ideas.'
     });
+    slideNum++;
+    extraIdx++;
   }
 
   // Final Slide: Conclusion

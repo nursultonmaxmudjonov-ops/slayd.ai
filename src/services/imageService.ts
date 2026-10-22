@@ -304,6 +304,37 @@ export function detectCategory(text: string): VisualCategory {
   return 'general';
 }
 
+/**
+ * AI-generated image via free Pollinations image API (no API key needed).
+ * Builds a deterministic URL — the image is generated on-demand by the CDN.
+ */
+export function getAIImageUrl(prompt: string, seed: number = 0, wide: boolean = false): string {
+  const text = encodeURIComponent(prompt.slice(0, 220));
+  const w = wide ? 1280 : 1024;
+  const h = wide ? 720 : 1024;
+  const finalSeed = seed || Math.floor(Math.random() * 100000);
+  return `https://image.pollinations.ai/prompt/${text}?width=${w}&height=${h}&seed=${finalSeed}&nologo=true&model=flux`;
+}
+
+/**
+ * Auto theme suggestion based on the topic's detected category.
+ * Chooses a background theme that matches the subject matter.
+ */
+export function suggestTheme(topic: string): 'midnight' | 'minimalist' | 'indigo' | 'emerald' | 'crimson' | 'cyberpunk' {
+  const category = detectCategory(topic);
+  switch (category) {
+    case 'ai': return 'cyberpunk';
+    case 'business': return 'indigo';
+    case 'ecology': return 'emerald';
+    case 'sport': return 'crimson';
+    case 'solar': return 'midnight';
+    case 'history': return 'midnight';
+    case 'education': return 'minimalist';
+    case 'medicine': return 'indigo';
+    default: return 'midnight';
+  }
+}
+
 export function getCleanImageUrl(topic: string, slideTitle: string = '', index: number = 0): string {
   // Extract category based on topic and slideTitle
   const category = detectCategory(`${topic} ${slideTitle}`);
