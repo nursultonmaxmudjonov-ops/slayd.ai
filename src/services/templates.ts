@@ -1,5 +1,13 @@
-import { Slide, Language, AudienceType } from '../types';
+import { Slide, Language, AudienceType, VisualMode } from '../types';
 import { getCleanImageUrl } from './imageService';
+
+// Design diversity: alternate visual style and image side per slide index
+function visualFor(index: number): { visualMode: VisualMode; imageSide: 'left' | 'right' } {
+  return {
+    visualMode: index % 3 === 1 ? 'photo' : 'ai_image',
+    imageSide: index % 2 === 1 ? 'left' : 'right'
+  };
+}
 
 export function getFallbackPresentation(
   topic: string,
@@ -23,6 +31,8 @@ export function getFallbackPresentation(
     imageUrl: getCleanImageUrl(topic, 'cover', 0),
     showImage: true,
     selected: true,
+    visualMode: 'ai_image',
+    imageSide: 'right',
     speakerNotes: lang === 'uz'
       ? `Hurmatli tinglovchilar, bugun biz "${topic}" mavzusini batafsil ko'rib chiqamiz.`
       : lang === 'ru'
@@ -40,6 +50,7 @@ export function getFallbackPresentation(
     imageUrl: getCleanImageUrl(topic, 'overview', 1),
     showImage: true,
     selected: true,
+    ...visualFor(1),
     points: lang === 'uz' ? [
       `${topic} sohasidagi zamonaviy tendentsiyalar va jadal o'sish sur'atlari`,
       'Zamonaviy texnologiyalar va yangi yondashuvlarning amaliy hayotga tatbiqi',
@@ -324,6 +335,7 @@ export function getFallbackPresentation(
       imageUrl: getCleanImageUrl(topic, t.title, slides.length),
       showImage: true,
       selected: true,
+      ...visualFor(slides.length),
       points: t.points,
       speakerNotes: lang === 'uz'
         ? 'Ushbu slayd asosiy fikrlarni mustahkamlaydi.'
@@ -345,6 +357,8 @@ export function getFallbackPresentation(
     imageUrl: getCleanImageUrl(topic, 'conclusion', 7),
     showImage: true,
     selected: true,
+    visualMode: 'ai_image',
+    imageSide: 'right',
     conclusion: lang === 'uz' ? {
       mainMessage: `"${topic}" mavzusi bugungi kunda har qachongidan ham dolzarb bo'lib, yangi imkoniyatlar eshigini ochadi.`,
       takeaways: [

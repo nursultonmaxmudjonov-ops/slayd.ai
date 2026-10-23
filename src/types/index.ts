@@ -61,6 +61,7 @@ export interface Slide {
   visualMode?: VisualMode; // 'ai_graphic' (Minimalist AI vector visual) or 'photo' (HD curated photo)
   showImage?: boolean;
   selected?: boolean; // For page selection
+  imageSide?: 'left' | 'right'; // Visual placement — varies per slide for design diversity
   speakerNotes?: string;
 }
 

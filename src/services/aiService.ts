@@ -1,4 +1,4 @@
-import { Slide, GenerateOptions, Language } from '../types';
+import { Slide, GenerateOptions, Language, VisualMode } from '../types';
 import { getFallbackPresentation } from './templates';
 import { getCleanImageUrl, getAIImageUrl } from './imageService';
 
@@ -17,17 +17,21 @@ Language requirement: Generate all slide text completely ${langPrompt}.
 Target audience: ${audience}.
 
 CRITICAL CONTENT RULES:
-1. EVERY bullet, stat, timeline step and quote MUST contain SPECIFIC, FACTUAL information about "${topic}" — real numbers, named concepts, concrete examples, dates, or techniques from that field.
-2. NEVER write generic filler phrases like "zamonaviy tendensiyalar", "katta imkoniyatlar", "muhim omillar", "asosiy jihatlar", "the future is bright", "many opportunities". If a sentence could apply to ANY topic, rewrite it with topic-specific detail.
-3. Each slide covers a DIFFERENT aspect of the topic (definition, history, how it works, benefits, challenges, real examples, data, future) — build a logical narrative plan like an expert would.
-4. Stats slide must contain plausible topic-specific figures (mark trends with approximations like "~", never invent exact fake citations).
-5. No two slides may repeat the same idea or sentence.
+1. PRECISION FIRST: Give EXACT, SPECIFIC facts — real dates, real names, real numbers, real laws/formulas, real places, real events. Vague statements are FORBIDDEN.
+2. Every bullet must contain at least ONE concrete fact: a date (e.g. "1957-yil"), a name (e.g. "Albert Einstein"), a figure (e.g. "~384 400 km"), or a named concept (e.g. "fotosintez").
+3. NEVER write generic filler phrases like "zamonaviy tendensiyalar", "katta imkoniyatlar", "muhim omillar", "the future is bright", "many opportunities". If a sentence could apply to ANY topic, rewrite it with topic-specific detail.
+4. Each slide covers a DIFFERENT aspect of the topic (definition, history, how it works, benefits, challenges, real examples, data, future) — build a logical narrative plan like an expert would.
+5. Stats slides must contain REAL, verifiable topic figures (approximate where needed with "~", never invent exact fake citations).
+6. No two slides may repeat the same idea or sentence.
+7. LAYOUTS ARE OPTIONAL: use "stats", "compare", "timeline", "quote" only where they fit the topic naturally. If the topic doesn't need stats, use more "bullets" slides with rich facts instead. DO NOT force a stats slide when facts don't support it.
 
 Respond with a VALID JSON ARRAY of slide objects ONLY. Do not wrap in markdown quotes if possible, or wrap in \`\`\`json ... \`\`\`.
 Each slide must have:
 - "id": string (e.g. "slide-1", "slide-2", etc.)
 - "layout": one of ["title", "bullets", "stats", "compare", "timeline", "quote", "conclusion"]
-- "imagePrompt": a SHORT visual English description (5-10 words) of a relevant illustration/photo for this slide (e.g. "modern robot hand touching digital screen"). No text in the image.
+- "imagePrompt": MANDATORY for EVERY slide. A SHORT visual English description (5-12 words) of a relevant illustration/photo SPECIFIC to this slide's content and "${topic}" (e.g. topic=Quyosh: "solar flare plasma corona closeup"; topic=AI: "neural network glowing nodes on chip"). Each slide's imagePrompt must be DIFFERENT — describe the visual that best represents THIS slide's specific sub-topic. No text in the image.
+- "visualStyle": one of ["photo", "ai_image"] — pick "photo" for realistic/photographic sub-topics, "ai_image" for conceptual/abstract ones. Vary it between slides for visual diversity.
+- "imageSide": one of ["left", "right"] — alternate visual placement between slides (title slide always "right").
 - "title": concise, impactful headline (3-8 words)
 - "subtitle": optional supporting line or subtitle
 - "badge": short tag/category (e.g. "01", "Fakt", "Tahlil", "Xulosa")
@@ -41,7 +45,7 @@ Each slide must have:
   * For "quote": "quote": { "text": "...", "author": "...", "role": "..." }
   * For "conclusion": "conclusion": { "mainMessage": "...", "takeaways": ["point 1", "point 2", "point 3"], "callToAction": "...", "contact": "..." }
 
-Make sure slide 1 is "title", slide 2 is "bullets", include at least one "stats" or "compare", and make the final slide "conclusion".`;
+Make sure slide 1 is "title" and the final slide is "conclusion". Slide 2 should be "bullets". Other layouts (stats, compare, timeline, quote) are RECOMMENDED but NOT required — use each only if the topic genuinely supports it.`;
 
   // 1. If user provided a Gemini API Key, try Gemini first
   if (apiKey && apiKey.trim().length > 10) {
@@ -122,7 +126,7 @@ function parseSlideJson(rawText: string, topic: string): Slide[] | null {
     } else if (clean.startsWith('```')) {
       clean = clean.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
-    
+
     const firstBracket = clean.indexOf('[');
     const lastBracket = clean.lastIndexOf(']');
     if (firstBracket !== -1 && lastBracket !== -1) {
@@ -132,21 +136,35 @@ function parseSlideJson(rawText: string, topic: string): Slide[] | null {
     const parsed = JSON.parse(clean);
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed.map((item, index) => {
-        // Use AI-generated image when available, fallback to curated photo
+        // Topic-specific, per-slide unique image (AI-generated, fallback to curated photo)
+        const slideTitle: string = item.title || `Slide ${index + 1}`;
         const imagePrompt = item.imagePrompt
-          ? `${item.imagePrompt}, ${topic}, professional, high quality, detailed`
-          : '';
+          ? `${item.imagePrompt}, ${topic}, professional presentation illustration, high quality, detailed, no text`
+          : `${slideTitle}, ${topic}, professional presentation illustration, high quality, no text`;
+
+        // DESIGN DIVERSITY: alternate visual style & placement per slide
+        const visualMode: VisualMode =
+          item.visualStyle === 'photo' || item.visualStyle === 'ai_image'
+            ? item.visualStyle
+            : index % 3 === 1
+              ? 'photo'      // every 2nd slide — curated HD photo
+              : 'ai_image';  // others — unique AI-generated illustration
+
+        const imageSide: 'left' | 'right' =
+          item.imageSide === 'left' || item.imageSide === 'right'
+            ? item.imageSide
+            : index % 2 === 1 ? 'left' : 'right';
+
         return {
           ...item,
           id: item.id || `slide-${index + 1}`,
           layout: item.layout || (index === 0 ? 'title' : 'bullets'),
-          title: item.title || `Slide ${index + 1}`,
+          title: slideTitle,
           selected: true,
           showImage: true,
-          visualMode: 'ai_graphic' as const,
-          imageUrl: imagePrompt
-            ? getAIImageUrl(imagePrompt, index + 1, index === 0)
-            : getCleanImageUrl(topic, item.title || '', index)
+          visualMode,
+          imageSide,
+          imageUrl: getAIImageUrl(imagePrompt, (index + 1) * 7919 + index * 104729, index === 0)
         };
       });
     }

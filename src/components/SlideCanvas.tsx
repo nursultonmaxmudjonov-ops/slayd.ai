@@ -300,7 +300,7 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
         <div className="relative z-10 flex-1 min-h-0 flex flex-col justify-center overflow-hidden my-1">
           {/* TITLE LAYOUT */}
           {slide.layout === 'title' && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 my-auto">
+            <div className={`flex flex-col sm:flex-row ${slide.imageSide === 'left' ? 'sm:flex-row-reverse' : ''} items-center justify-between gap-6 my-auto`}>
               <div className="flex-1 text-left space-y-3">
                 <input
                   type="text"
@@ -360,7 +360,7 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
 
           {/* BULLETS LAYOUT (Side-by-side with Minimalist AI Visual or full-width) */}
           {slide.layout === 'bullets' && (
-            <div className={`flex flex-col sm:flex-row gap-4 h-full max-h-full items-stretch overflow-hidden`}>
+            <div className={`flex flex-col sm:flex-row ${slide.imageSide === 'left' ? 'sm:flex-row-reverse' : ''} gap-4 h-full max-h-full items-stretch overflow-hidden`}>
               {/* Bullet Cards Column */}
               <div className={`${hasImage ? 'w-full sm:w-3/5' : 'w-full'} flex flex-col justify-center gap-2.5 overflow-hidden`}>
                 {(slide.points || []).map((pt, idx) => (

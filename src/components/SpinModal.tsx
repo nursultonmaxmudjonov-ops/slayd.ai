@@ -12,6 +12,8 @@ import {
   checkPromo,
   redeemPromo,
   getWeeklyFeaturedPromo,
+  promoDayBlocked,
+  promoBlockReason,
   CreditUser
 } from '../services/creditsService';
 
@@ -106,7 +108,8 @@ export const SpinModal: React.FC<SpinModalProps> = ({ isOpen, onClose, user, onW
   const [jackpot, setJackpot] = useState(false);
   const [remaining, setRemaining] = useState(msUntilNextSpin());
   const [promoCode, setPromoCode] = useState('');
-  const [promoState, setPromoState] = useState<{ type: 'ok' | 'used' | 'bad'; amount?: number } | null>(null);
+  const [promoState, setPromoState] = useState<{ type: 'ok' | 'used' | 'bad' | 'limit'; amount?: number } | null>(null);
+  const dayBlocked = promoDayBlocked();
   const weeklyPromo = getWeeklyFeaturedPromo();
   const t = T[language];
 
@@ -260,8 +263,16 @@ export const SpinModal: React.FC<SpinModalProps> = ({ isOpen, onClose, user, onW
               {t.promoTitle}
             </div>
 
+            {/* Daily limit hint */}
+            {dayBlocked && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{promoBlockReason(language)}</span>
+              </div>
+            )}
+
             {/* Weekly featured promo */}
-            {weeklyPromo && (
+            {weeklyPromo && !dayBlocked && (
               <button
                 onClick={() => {
                   setPromoCode(weeklyPromo.code);
@@ -290,9 +301,15 @@ export const SpinModal: React.FC<SpinModalProps> = ({ isOpen, onClose, user, onW
               <button
                 onClick={() => {
                   if (!promoCode.trim()) return;
+                  // DAILY LIMIT: max 1 promo per day
+                  if (dayBlocked) {
+                    setPromoState({ type: 'limit' });
+                    return;
+                  }
+                  const isWeeklyFeatured = !!weeklyPromo && promoCode.trim().toUpperCase() === weeklyPromo.code;
                   const check = checkPromo(promoCode);
                   if (check.status === 'valid') {
-                    const res = redeemPromo(promoCode);
+                    const res = redeemPromo(promoCode, isWeeklyFeatured);
                     if (res) {
                       onWin(res.user, res.amount);
                       setPromoState({ type: 'ok', amount: res.amount });
@@ -311,10 +328,14 @@ export const SpinModal: React.FC<SpinModalProps> = ({ isOpen, onClose, user, onW
             {promoState && (
               <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${
                 promoState.type === 'ok' ? 'text-emerald-400' :
-                promoState.type === 'used' ? 'text-amber-400' : 'text-rose-400'
+                promoState.type === 'used' ? 'text-amber-400' :
+                promoState.type === 'limit' ? 'text-amber-400' : 'text-rose-400'
               }`}>
                 {promoState.type === 'ok' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                {promoState.type === 'ok' ? `${t.promoOk}${promoState.amount}` : promoState.type === 'used' ? t.promoUsed : t.promoBad}
+                {promoState.type === 'ok' ? `${t.promoOk}${promoState.amount}`
+                  : promoState.type === 'used' ? t.promoUsed
+                  : promoState.type === 'limit' ? promoBlockReason(language)
+                  : t.promoBad}
               </div>
             )}
           </div>

@@ -215,8 +215,11 @@ export const PROMO_CODES: Record<string, number> = {
 /**
  * Weekly featured promo: one random UNUSED code is highlighted each week.
  * Deterministic per ISO week — same code for everyone during that week.
+ * Returns null once the weekly promo has been redeemed this week.
  */
 export function getWeeklyFeaturedPromo(): { code: string; amount: number } | null {
+  if (weeklyPromoUsedThisWeek()) return null;
+
   const used = loadUsedPromos();
   const available = Object.keys(PROMO_CODES).filter(c => !used.includes(c));
   if (available.length === 0) return null;
@@ -233,6 +236,56 @@ export function getWeeklyFeaturedPromo(): { code: string; amount: number } | nul
 }
 
 const USED_PROMOS_KEY = 'slaydai_used_promos';
+const PROMO_LIMIT_KEY = 'slaydai_promo_limit';
+
+interface PromoLimit {
+  /** ISO date (yyyy-mm-dd) of last daily promo redemption */
+  lastDailyPromo: string | null;
+  /** ISO week key of last WEEKLY featured promo redemption */
+  lastWeeklyPromoWeek: string | null;
+}
+
+function loadPromoLimit(): PromoLimit {
+  try {
+    const raw = localStorage.getItem(PROMO_LIMIT_KEY);
+    if (raw) return JSON.parse(raw) as PromoLimit;
+  } catch { /* ignore */ }
+  return { lastDailyPromo: null, lastWeeklyPromoWeek: null };
+}
+
+function savePromoLimit(l: PromoLimit) {
+  localStorage.setItem(PROMO_LIMIT_KEY, JSON.stringify(l));
+}
+
+/**
+ * PROMO LIMITS: max 1 promo code per day (any code).
+ * The WEEKLY featured promo additionally counts toward the weekly limit (1 per week)
+ * and, once used in a week, blocks regular promos for the rest of that week.
+ */
+export function promoDayBlocked(): boolean {
+  const limit = loadPromoLimit();
+  return limit.lastDailyPromo === today();
+}
+
+export function weeklyPromoUsedThisWeek(): boolean {
+  const limit = loadPromoLimit();
+  return limit.lastWeeklyPromoWeek === weekKey();
+}
+
+/** Why is promo entry disabled? (for UI hint messages) */
+export function promoBlockReason(lang: 'uz' | 'ru' | 'en'): string {
+  if (promoDayBlocked()) {
+    return lang === 'uz' ? 'Bugun promo kod allaqachon ishlatilgan — ertaga yana urinib ko\'ring (kuniga 1 ta).'
+      : lang === 'ru' ? 'Промокод уже использован сегодня — попробуйте завтра (1 в день).'
+      : 'Promo code already used today — try again tomorrow (1 per day).';
+  }
+  if (weeklyPromoUsedThisWeek()) {
+    return lang === 'uz' ? 'Bu haftaning tanlangan kodi ishlatilgan — yangi haftada ko\'ring (haftada 1 ta).'
+      : lang === 'ru' ? 'Промокод недели уже использован — ждите новой недели (1 в неделю).'
+      : "This week's featured code was used — check next week (1 per week).";
+  }
+  return '';
+}
 
 function loadUsedPromos(): string[] {
   try {
@@ -257,7 +310,12 @@ export function checkPromo(code: string): { status: 'valid' | 'invalid' | 'used'
 }
 
 /** Redeem a promo code: adds credits and marks it used. Returns updated user or null. */
-export function redeemPromo(code: string): { user: CreditUser; amount: number } | null {
+export function redeemPromo(code: string, isWeeklyFeatured: boolean = false): { user: CreditUser; amount: number } | null {
+  // DAILY LIMIT: only 1 promo code of any kind per calendar day
+  if (promoDayBlocked()) return null;
+  // WEEKLY LIMIT: the featured weekly promo only once per week
+  if (isWeeklyFeatured && weeklyPromoUsedThisWeek()) return null;
+
   const check = checkPromo(code);
   if (check.status !== 'valid') return null;
 
@@ -270,6 +328,14 @@ export function redeemPromo(code: string): { user: CreditUser; amount: number } 
   const used = loadUsedPromos();
   used.push(code.trim().toUpperCase());
   saveUsedPromos(used);
+
+  // Record the limit
+  const limit = loadPromoLimit();
+  limit.lastDailyPromo = today();
+  if (isWeeklyFeatured) {
+    limit.lastWeeklyPromoWeek = weekKey();
+  }
+  savePromoLimit(limit);
 
   return { user, amount: check.amount };
 }

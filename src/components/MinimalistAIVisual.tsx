@@ -187,8 +187,88 @@ export const MinimalistAIVisual: React.FC<MinimalistAIVisualProps> = ({
         </svg>
       )}
 
-      {/* CATEGORY 6: GENERAL / ABSTRACT */}
-      {(category === 'general' || category === 'education') && (
+      {/* CATEGORY 6: HISTORY / HERITAGE */}
+      {category === 'history' && (
+        <svg viewBox="0 0 400 300" className="w-full h-full max-h-[260px] p-4 drop-shadow-2xl">
+          {/* Ancient arch / monument silhouette */}
+          <path d="M 110 230 L 110 130 Q 200 60 290 130 L 290 230" fill="none" stroke="#fbbf24" strokeWidth="3" opacity="0.9" />
+          <path d="M 140 230 L 140 150 Q 200 105 260 150 L 260 230" fill="none" stroke="#f59e0b" strokeWidth="2" opacity="0.7" />
+          {/* Column capitals */}
+          <rect x="98" y="118" width="24" height="10" rx="2" fill="#f59e0b" opacity="0.85" />
+          <rect x="278" y="118" width="24" height="10" rx="2" fill="#f59e0b" opacity="0.85" />
+          {/* Ornamental mosaic dots */}
+          {[[160,90],[180,78],[200,72],[220,78],[240,90]].map(([cx,cy],i)=>(
+            <circle key={i} cx={cx} cy={cy} r="3.5" fill="#fde68a" opacity="0.8" />
+          ))}
+          {/* Sand ground */}
+          <line x1="70" y1="230" x2="330" y2="230" stroke="#d97706" strokeWidth="2" opacity="0.5" />
+          {/* Scroll / manuscript */}
+          <rect x="70" y="60" width="54" height="38" rx="4" fill="#78350f" stroke="#fbbf24" strokeWidth="1" opacity="0.9" />
+          <line x1="78" y1="70" x2="116" y2="70" stroke="#fde68a" strokeWidth="1.5" opacity="0.7" />
+          <line x1="78" y1="78" x2="110" y2="78" stroke="#fde68a" strokeWidth="1.5" opacity="0.7" />
+          <line x1="78" y1="86" x2="114" y2="86" stroke="#fde68a" strokeWidth="1.5" opacity="0.7" />
+          <g transform="translate(130, 250)">
+            <rect x="0" y="0" width="140" height="24" rx="6" fill="#431407" stroke="#fbbf24" strokeWidth="1" />
+            <text x="70" y="16" fill="#fde68a" textAnchor="middle" fontSize="10" fontWeight="bold">ANCIENT HERITAGE</text>
+          </g>
+        </svg>
+      )}
+
+      {/* CATEGORY 7: SPORT / FITNESS */}
+      {category === 'sport' && (
+        <svg viewBox="0 0 400 300" className="w-full h-full max-h-[260px] p-4 drop-shadow-2xl">
+          {/* Dynamic speed arcs */}
+          <path d="M 60 220 Q 200 140 340 200" fill="none" stroke="#fb7185" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+          <path d="M 80 245 Q 200 175 320 230" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+          {/* Athlete runner silhouette (abstract) */}
+          <circle cx="245" cy="95" r="14" fill="#fb7185" />
+          <path d="M 245 112 L 220 155 L 185 175" fill="none" stroke="#fb7185" strokeWidth="10" strokeLinecap="round" />
+          <path d="M 245 112 L 270 150 L 305 165" fill="none" stroke="#f43f5e" strokeWidth="10" strokeLinecap="round" />
+          <path d="M 228 128 L 195 120" fill="none" stroke="#fb7185" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 262 128 L 292 118" fill="none" stroke="#fb7185" strokeWidth="8" strokeLinecap="round" />
+          {/* Energy pulse rings */}
+          <circle cx="245" cy="95" r="26" fill="none" stroke="#fb7185" strokeWidth="1.5" opacity="0.4" />
+          <circle cx="245" cy="95" r="40" fill="none" stroke="#f59e0b" strokeWidth="1" opacity="0.25" />
+          {/* Goal / target */}
+          <circle cx="105" cy="95" r="30" fill="none" stroke="#f59e0b" strokeWidth="3" />
+          <circle cx="105" cy="95" r="20" fill="none" stroke="#f59e0b" strokeWidth="2" opacity="0.7" />
+          <circle cx="105" cy="95" r="10" fill="#fbbf24" />
+          <g transform="translate(130, 250)">
+            <rect x="0" y="0" width="140" height="24" rx="6" fill="#4c0519" stroke="#fb7185" strokeWidth="1" />
+            <text x="70" y="16" fill="#fecdd3" textAnchor="middle" fontSize="10" fontWeight="bold">PEAK PERFORMANCE</text>
+          </g>
+        </svg>
+      )}
+
+      {/* CATEGORY 8: EDUCATION / SCIENCE / BOOKS */}
+      {category === 'education' && (
+        <svg viewBox="0 0 400 300" className="w-full h-full max-h-[260px] p-4 drop-shadow-2xl">
+          {/* Open book */}
+          <path d="M 120 180 Q 165 150 200 170 Q 235 150 280 180 L 280 220 Q 235 195 200 212 Q 165 195 120 220 Z" fill="#6366f1" opacity="0.35" />
+          <path d="M 120 180 Q 165 150 200 170 L 200 212 Q 165 195 120 220 Z" fill="#818cf8" opacity="0.5" />
+          <path d="M 200 170 L 200 212" stroke="#c7d2fe" strokeWidth="2" />
+          {/* Text lines on pages */}
+          <line x1="135" y1="180" x2="185" y2="192" stroke="#e0e7ff" strokeWidth="1.5" opacity="0.7" />
+          <line x1="135" y1="192" x2="185" y2="202" stroke="#e0e7ff" strokeWidth="1.5" opacity="0.7" />
+          <line x1="215" y1="192" x2="265" y2="180" stroke="#e0e7ff" strokeWidth="1.5" opacity="0.7" />
+          <line x1="215" y1="202" x2="265" y2="192" stroke="#e0e7ff" strokeWidth="1.5" opacity="0.7" />
+          {/* Graduation cap above */}
+          <polygon points="200,80 250,100 200,120 150,100" fill="#a855f7" opacity="0.9" />
+          <rect x="228" y="100" width="4" height="26" fill="#a855f7" />
+          <circle cx="232" cy="130" r="5" fill="#fbbf24" />
+          {/* Rising knowledge particles */}
+          <circle cx="160" cy="60" r="3" fill="#c4b5fd" opacity="0.8" />
+          <circle cx="240" cy="55" r="4" fill="#c4b5fd" opacity="0.8" />
+          <circle cx="275" cy="75" r="3" fill="#818cf8" opacity="0.8" />
+          <g transform="translate(130, 250)">
+            <rect x="0" y="0" width="140" height="24" rx="6" fill="#1e1b4b" stroke="#818cf8" strokeWidth="1" />
+            <text x="70" y="16" fill="#c7d2fe" textAnchor="middle" fontSize="10" fontWeight="bold">KNOWLEDGE HUB</text>
+          </g>
+        </svg>
+      )}
+
+      {/* CATEGORY 9: GENERAL / ABSTRACT */}
+      {category === 'general' && (
         <svg viewBox="0 0 400 300" className="w-full h-full max-h-[260px] p-4 drop-shadow-2xl">
           {/* Geometric isometric polygon */}
           <polygon points="200,60 280,110 280,200 200,250 120,200 120,110" fill="none" stroke="#818cf8" strokeWidth="2" opacity="0.7" />

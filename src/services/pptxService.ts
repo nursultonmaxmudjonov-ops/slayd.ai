@@ -38,6 +38,9 @@ export async function exportToPowerPoint(
   const fontMain = fonts.main;
   const fontDisplay = fonts.display;
 
+  // Per-slide design diversity: alternate image side & ensure each slide has a visual mode
+  const sideOf = (s: Slide, index: number): 'left' | 'right' => s.imageSide || (index % 2 === 1 ? 'left' : 'right');
+
   for (let index = 0; index < slidesToProcess.length; index++) {
     const s = slidesToProcess[index];
     const slide = pptx.addSlide();
@@ -114,81 +117,84 @@ export async function exportToPowerPoint(
           line: { color: primary, width: 1.2 }
         });
 
-        // Pill Badge
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x: 1.6,
-          y: 1.6,
-          w: 2.2,
-          h: 0.4,
-          rectRadius: 0.08,
-          fill: { color: primary }
-        });
-        slide.addText(s.badge ? s.badge.toUpperCase() : 'SLAYDAI TAQDIMOT', {
-          x: 1.6,
-          y: 1.6,
-          w: 2.2,
-          h: 0.4,
-          fontSize: 10,
-          bold: true,
-          color: 'FFFFFF',
-          align: 'center',
-          valign: 'middle',
-          fontFace: fontMain
-        });
-
-        // Main Title
-        slide.addText(s.title, {
-          x: 1.6,
-          y: 2.3,
-          w: 7.2,
-          h: 1.9,
-          fontSize: 38,
-          bold: true,
-          color: text,
-          fontFace: fontDisplay
-        });
-
-        // Subtitle
-        if (s.subtitle) {
-          slide.addText(s.subtitle, {
-            x: 1.6,
-            y: 4.2,
-            w: 7.2,
-            h: 0.9,
-            fontSize: 15,
-            color: textMuted,
-            fontFace: fontMain
-          });
-        }
-
-        // Author / Date Pill
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x: 1.6,
-          y: 5.3,
-          w: 4.5,
-          h: 0.45,
-          rectRadius: 0.08,
-          fill: { color: bg },
-          line: { color: borderCol, width: 0.8 }
-        });
-        slide.addText(`Taqdimotchi: SlaydAI • ${new Date().toLocaleDateString('uz-UZ')}`, {
-          x: 1.6,
-          y: 5.3,
-          w: 4.5,
-          h: 0.45,
-          fontSize: 11,
-          color: textMuted,
-          align: 'center',
-          valign: 'middle',
-          fontFace: fontMain
-        });
-
         // Right Visual Frame (Image or Minimalist Geometric Graphic)
         if (s.showImage !== false) {
-          const imgX = 9.0;
+          const onLeft = sideOf(s, index) === 'left';
+          const imgX = onLeft ? 0.9 : 9.0;
           const imgY = 1.6;
           const imgW = 2.8;
           const imgH = 4.3;
+          // Mirror text column when image is on the left
+          const txtX = onLeft ? 4.1 : 1.6;
+
+          // Pill Badge
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: txtX,
+            y: 1.6,
+            w: 2.2,
+            h: 0.4,
+            rectRadius: 0.08,
+            fill: { color: primary }
+          });
+          slide.addText(s.badge ? s.badge.toUpperCase() : 'SLAYDAI TAQDIMOT', {
+            x: txtX,
+            y: 1.6,
+            w: 2.2,
+            h: 0.4,
+            fontSize: 10,
+            bold: true,
+            color: 'FFFFFF',
+            align: 'center',
+            valign: 'middle',
+            fontFace: fontMain
+          });
+
+          // Main Title
+          slide.addText(s.title, {
+            x: txtX,
+            y: 2.3,
+            w: onLeft ? 4.6 : 7.2,
+            h: 1.9,
+            fontSize: 38,
+            bold: true,
+            color: text,
+            fontFace: fontDisplay
+          });
+
+          // Subtitle
+          if (s.subtitle) {
+            slide.addText(s.subtitle, {
+              x: txtX,
+              y: 4.2,
+              w: onLeft ? 4.6 : 7.2,
+              h: 0.9,
+              fontSize: 15,
+              color: textMuted,
+              fontFace: fontMain
+            });
+          }
+
+          // Author / Date Pill
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: txtX,
+            y: 5.3,
+            w: 4.5,
+            h: 0.45,
+            rectRadius: 0.08,
+            fill: { color: bg },
+            line: { color: borderCol, width: 0.8 }
+          });
+          slide.addText(`Taqdimotchi: SlaydAI • ${new Date().toLocaleDateString('uz-UZ')}`, {
+            x: txtX,
+            y: 5.3,
+            w: 4.5,
+            h: 0.45,
+            fontSize: 11,
+            color: textMuted,
+            align: 'center',
+            valign: 'middle',
+            fontFace: fontMain
+          });
 
           let imageEmbedded = false;
           if (s.imageUrl && (s.visualMode === 'photo' || s.visualMode === 'ai_image')) {
@@ -259,60 +265,63 @@ export async function exportToPowerPoint(
         const availableHeight = 4.4;
         const cardH = Math.min(0.95, (availableHeight - ((points.length - 1) * 0.18)) / (points.length || 1));
 
-        points.forEach((point, pIdx) => {
-          const curY = startY + (pIdx * (cardH + 0.18));
-
-          // Bullet Card Container
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: 0.9,
-            y: curY,
-            w: contentWidth,
-            h: cardH,
-            rectRadius: 0.09,
-            fill: { color: cardBg },
-            line: { color: borderCol, width: 0.8 }
-          });
-
-          // Number Pill
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: 1.15,
-            y: curY + (cardH / 2) - 0.18,
-            w: 0.38,
-            h: 0.36,
-            rectRadius: 0.08,
-            fill: { color: primary }
-          });
-          slide.addText(`${pIdx + 1}`, {
-            x: 1.15,
-            y: curY + (cardH / 2) - 0.18,
-            w: 0.38,
-            h: 0.36,
-            fontSize: 10,
-            bold: true,
-            color: 'FFFFFF',
-            align: 'center',
-            valign: 'middle',
-            fontFace: fontMain
-          });
-
-          // Bullet Text
-          slide.addText(point, {
-            x: 1.7,
-            y: curY,
-            w: contentWidth - 0.95,
-            h: cardH,
-            fontSize: 13,
-            color: text,
-            valign: 'middle',
-            fontFace: fontMain
-          });
-        });
-
-        // Right Visual Frame (if visual enabled)
+        // Right Visual Frame (if visual enabled) — side alternates per slide for design diversity
         if (hasVisual) {
-          const vX = 8.2;
+          const onLeft = sideOf(s, index) === 'left';
+          const vX = onLeft ? 0.9 : 8.2;
           const vY = startY;
           const vW = 4.23;
+          // Shift bullet cards right when the visual is on the left
+          const bulletX = onLeft ? 5.5 : 0.9;
+          const bulletW = onLeft ? 7.0 : contentWidth;
+          points.forEach((point, pIdx) => {
+            const curY = startY + (pIdx * (cardH + 0.18));
+
+            // Bullet Card Container
+            slide.addShape(pptx.ShapeType.roundRect, {
+              x: bulletX,
+              y: curY,
+              w: bulletW,
+              h: cardH,
+              rectRadius: 0.09,
+              fill: { color: cardBg },
+              line: { color: borderCol, width: 0.8 }
+            });
+
+            // Number Pill
+            slide.addShape(pptx.ShapeType.roundRect, {
+              x: bulletX + 0.25,
+              y: curY + (cardH / 2) - 0.18,
+              w: 0.38,
+              h: 0.36,
+              rectRadius: 0.08,
+              fill: { color: primary }
+            });
+            slide.addText(`${pIdx + 1}`, {
+              x: bulletX + 0.25,
+              y: curY + (cardH / 2) - 0.18,
+              w: 0.38,
+              h: 0.36,
+              fontSize: 10,
+              bold: true,
+              color: 'FFFFFF',
+              align: 'center',
+              valign: 'middle',
+              fontFace: fontMain
+            });
+
+            // Bullet Text
+            slide.addText(point, {
+              x: bulletX + 0.8,
+              y: curY,
+              w: bulletW - 0.95,
+              h: cardH,
+              fontSize: 13,
+              color: text,
+              valign: 'middle',
+              fontFace: fontMain
+            });
+          });
           const vH = Math.max(3.2, Math.min(4.4, (points.length * (cardH + 0.18)) - 0.18));
 
           let imageEmbedded = false;
